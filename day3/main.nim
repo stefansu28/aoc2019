@@ -9,7 +9,7 @@ type
   Wire = seq[Segment]
 
 proc dist(p: Point): int {.inline.}=
-  return abs(p[0]) + abs(p[0])
+  return abs(p[0]) + abs(p[1])
 
 # proc segMax(l: Segment): int {.inline.} =
 #   return max(dist(l[0]), dist(l[1])
@@ -36,18 +36,18 @@ proc intersect(l1: Segment, l2: Segment): (bool, Point) =
     var
       minVal = min(l2[0][dir2], l2[1][dir2])
       maxVal = max(l2[0][dir2], l2[1][dir2])
-    if not p[otherDir1] in minVal..maxVal:
+    if not (p[otherDir1] in minVal..maxVal):
       # echo "1 false"
       return (false, p)
 
     p[otherDir2] = l2[0][otherDir2]
     minVal = min(l1[0][dir1], l1[1][dir1])
     maxVal = max(l1[0][dir1], l1[1][dir1])
-    var intersected = not p[otherDir2] in minVal..maxVal
+    var intersected = p[otherDir2] in minVal..maxVal
     # echo fmt"2 {intersected}"
     return (intersected, p)
 
-    # segments are going in different directions
+    # segments are going in same direction
   else:
     if l1[0][otherDir1] != l2[0][otherDir2]:
       return (false, p)
@@ -79,6 +79,7 @@ proc intersect(l1: Segment, l2: Segment): (bool, Point) =
       p = possiblePoints[0]
     else:
       p = possiblePoints[1]
+    # echo "4 true"
     return (true, p)
 
 proc createWire(input: openarray[string]): Wire =
@@ -111,8 +112,8 @@ proc main() =
     for s2 in wire2:
       var (intersected, point) = intersect(s1, s2)
       if intersected and (dist(point) < minInt or minInt == 0):
-        echo fmt"s1: {s1} s2: {s2}"
-        echo fmt"point: {point} dist: {dist(point)}"
+        # echo fmt"s1: {s1} s2: {s2}"
+        # echo fmt"point: {point} dist: {dist(point)}"
         minInt = dist(point)
 
   echo minInt
