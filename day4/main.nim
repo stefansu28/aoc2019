@@ -41,23 +41,33 @@ proc incPass(p: ptr PassArray): void =
 
 proc checkPass(p: ptr PassArray): bool =
   var
-    double = false
+    double = (-1,-1)
+    foundDouble = false
     prev = 10
-  for x in p[]:
+    prevprev = -1
+  for i in 0..<p[].len:
+    var x = p[i]
     if x > prev:
       return false
-    double = double or (x == prev)
+    if x == prev and not foundDouble:
+      if double[0] == -1:
+        double = (i-1, i)
+      elif double[1] == i-1:
+        double[1] = i
+    elif not foundDouble and x != prev and double[0] < double[1]-1:
+      double = (-1, -1)
+    elif not foundDouble and x != prev and double[0] == double[1]-1:
+        foundDouble = true
+    prevprev = prev
     prev = x
 
-  return double
+  return foundDouble or double[0] == 4
 
 
 proc countPasswords(low: int, high: int): int =
   var
     pass: PassArray
     count = 0
-
-  
 
   echo fmt"low: {low} high: {high}"
   intToPass(low, addr(pass))
