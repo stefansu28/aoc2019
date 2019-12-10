@@ -30,23 +30,24 @@ proc getOrCreateNode(nodes: var NodeList, val: string): (Node, int) =
 
 #   return dist
 
+proc findRoot(nodes: NodeList, i: int): int =
+  for j in 0..<nodes.len:
+    if i in nodes[j].children:
+      return findRoot(nodes, j)
+  return i
 
-proc paths(nodes: NodeList, i: int): seq[int] =
+
+proc paths(nodes: NodeList, i: int, depth: int): int =
   var
     node = nodes[i]
-    paths = if node.children.len > 0:
-              node.children.map(n => paths(nodes, n)).foldl(a & b).map(d => d + 1)
-            else:
-              newSeq[int]()
-  paths.add(0)
-  return paths
+  return node.children.map(n => paths(nodes, n, depth + 1)).foldl(a + b, 0) + depth
   
 proc orbitChecksum(nodes: NodeList): int =
   var
     sum = 0
-    paths = paths(nodes, 0)
-  echo paths
-  return paths.foldl(a + b)
+    paths = paths(nodes, findRoot(nodes, 0), 0)
+  return paths
+  # return paths.foldl(a + b)
   # return node.children.foldl(a + orbitChecksum(b) + 1)
 
 proc addEdge(nodes: var NodeList, val: string, child: string): void =
@@ -56,10 +57,15 @@ proc addEdge(nodes: var NodeList, val: string, child: string): void =
       parent = node
 
   if parent == nil:
-    var (node, _) = nodes.getOrCreateNode(val)
+    var (node, _) = nodes.addNode(val)
     parent = node
   var (_, i) = nodes.getOrCreateNode(child)
   parent.children.add(i)
+
+proc echoTree(nodes: NodeList, i: int, indent: string): void =
+  echo indent, nodes[i].val
+  for child in nodes[i].children:
+    echoTree(nodes, child, indent & "| ")
 
 proc main() =
   var nodes: NodeList
@@ -67,6 +73,7 @@ proc main() =
     var edge: seq[string] = stdin.readline().split(')')
     nodes.addEdge(edge[0], edge[1])
 
+  # nodes.echoTree(findRoot(nodes, 0), " ")
   # echo nodes.map(n => n[])
   echo orbitChecksum(nodes)
   
