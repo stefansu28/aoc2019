@@ -9,6 +9,10 @@ type
     Mult
     In
     Out
+    Jt
+    Jf
+    Less
+    Eq
     Halt = 99
   # Op = object
   #   case inst: Inst
@@ -26,8 +30,9 @@ type
 
 proc jump(i: Inst): int =
   case i:
-  of Add..Mult: return 4
-  of In..Out: return 2
+  of Add, Mult, Less, Eq: return 4
+  of In, Out: return 2
+  of Jt, Jf: return 3
   else: raise newException(Exception, fmt"no jump for instruction {i}")
 
 proc jump(o: Op): int =
@@ -45,7 +50,7 @@ proc parseInst(pc: int, mem: var seq[int]): Op =
     inst = Inst(opCode mod 100)
   op.inst = inst
   case inst:
-  of Add, Mult:
+  of Add, Mult,Jt..Eq:
     op.x = readParam(ParamMode((opCode div 100) mod 10), mem[pc + 1], mem)
     op.y = readParam(ParamMode((opCode div 1000) mod 10), mem[pc + 2], mem)
     op.z = mem[pc + 3]
@@ -67,6 +72,22 @@ proc run(prog: var seq[int]): int =
     of Mult: prog[op.z] = op.x * op.y
     of In: prog[op.x] = stdin.readline().parseInt()
     of Out: echo prog[op.x]
+    of Jt:
+      if op.x != 0:
+        pc = op.y - jump(op)
+      else: discard
+    of Jf:
+      if op.x == 0:
+        pc = op.y - jump(op)
+      else: discard
+    of Less:
+      if op.x < op.y:
+        prog[op.z] = 1
+      else: prog[op.z] = 0
+    of Eq:
+      if op.x == op.y:
+        prog[op.z] = 1
+      else: prog[op.z] = 0
     of Halt: return prog[0]
     # else: raise newException(Exception, fmt"unknown inst {prog[pc]}")
     pc += jump(op)
