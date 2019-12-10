@@ -18,14 +18,14 @@ type
 proc hashPoint(p: Point): int =
   return (abs(p[0] + 7789*p[1])) mod mapSize
 
-proc getSetMap(m: ptr StepMap, p: Point): (bool, int) =
+proc getStepMap(m: ptr StepMap, p: Point): (bool, int) =
   var
     prev: ref StepMapEntry = nil
     node = m[hashPoint(p)]
   while node != nil and node.p != p:
     prev = node
     node = node.next
-  if node.p == p:
+  if node != nil and node.p == p:
     return (true, node.val)
   else:
     return (false, 0)
@@ -36,9 +36,7 @@ proc setStepMap(m: ptr StepMap, p: Point, steps: int): int =
     node = m[hashPoint(p)]
   while node != nil and node.p != p:
     prev = node
-    echo node == nil
     node = node.next
-    echo "hi"
   if prev == nil and node == nil:
     var newNode: ref StepMapEntry
     new(newNode)
@@ -92,7 +90,7 @@ proc intersect(l1: Segment, l2: Segment): (bool, Point, int) =
     # echo fmt"2 {intersected}"
     if intersected:
       steps = l1[2] + l2[2] + abs(p[dir1] - l1[0][dir1]) + abs(p[dir2] - l2[0][dir2])
-      echo fmt"l1:: {l1}, l2: {l2}, p: {p} steps: {steps}"
+      # echo fmt"l1:: {l1}, l2: {l2}, p: {p} steps: {steps}"
     return (intersected, p, steps)
 
     # segments are going in same direction
@@ -149,8 +147,8 @@ proc createWire(input: openarray[string]): Wire =
     cumStep = 0
     stepMap: StepMap
 
-  proc addPoint(p: Point): int =
-    setStepMap(addr(stepMap), p, cumStep)
+  # proc addPoint(p: Point): int =
+  #   setStepMap(addr(stepMap), p, cumStep)
   for s in input:
     var
       next = p
@@ -159,20 +157,21 @@ proc createWire(input: openarray[string]): Wire =
     i += 1
     case dir[0]
     of 'R':
-      next[0] += parseInt(dir[1..^1])
-      step = next[0]
+      step = parseInt(dir[1..^1])
+      next[0] += step
     of 'L':
-      next[0] -= parseInt(dir[1..^1])
-      step = next[0]
+      step = parseInt(dir[1..^1])
+      next[0] -= step
     of 'U':
-      next[1] += parseInt(dir[1..^1])
-      step = next[1]
+      step = parseInt(dir[1..^1])
+      next[1] += step
     of 'D':
-      next[1] -= parseInt(dir[1..^1])
-      step = next[1]
+      step = parseInt(dir[1..^1])
+      next[1] -= step
     else: raise newException(Exception, fmt"bad input {dir}")
-    iterPoints(p, next, addPoint)
-    var (_, pointStep) = getSetMap(addr(stepMap), p)
+    # iterPoints(p, next, addPoint)
+    # var (_, pointStep) = getStepMap(addr(stepMap), p)
+    var pointStep = setStepMap(addr(stepMap), p, cumStep)
     wire.add((p, next, pointStep))
     cumStep += abs(step)
     p = next
