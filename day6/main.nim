@@ -1,61 +1,51 @@
 from strformat import fmt
 from strutils import parseInt, split, join
-from sequtils import map
+from sequtils import foldl
 import sugar
 
 type
   Node = ref object
     val: string
-    children: seq[ref Node]
+    children: seq[int]
+  NodeList = seq[Node]
 
-proc getNode(forest: seq[ref Node], val: string): ref Node =
-  for node in forest:
-    if node == nil:
-      continue
-    elif node.val == val:
-      return node
-    else:
-      var
-        found: ref Node = nil
-        i = 0
-      while found == nil and i < node.children.len:
-        found = getNode(@[node.children[i]], val, child)
-      return found
-  return nil
 
-proc addEdge(forest: [ref Node], val: string, child: ref Node): void =
-  for node in forest:
-    if node == nil:
-      continue
-    elif node.val == val:
-      node.children.add(child)
-    else:
-      var
-        added: ref Node = nil
-        i = 0
-      while added == nil and i < node.children.len:
-        added = addEdge(node.children[i], val, child)
+proc addNode(nodes: var NodeList, val: string): (Node, int) {.inline.} =
+  var newNode: Node
+  new(newNode)
+  newNode.val = val
+  nodes.add(newNode)
+  return (newNode, nodes.len - 1)
   
-      return nil
-  
-    return node
-    
+proc getOrCreateNode(nodes: var NodeList, val: string): (Node, int) =
+  for i in 0..<nodes.len:
+    if nodes[i].val == val:
+      return (nodes[i], i)
+  return nodes.addNode(val)
+
+proc orbitChecksum(node: Node): int =
+  if node.children.len == 0:
+    return 0
+  return node.children.foldl(a + orbitChecksum(b) + 1)
+
+proc addEdge(nodes: var NodeList, val: string, child: string): void =
+  var parent: Node
+  for node in nodes:
+    if node.val == val:
+      parent = node
+
+  if parent == nil:
+    var (node, _) = nodes.getOrCreateNode(val)
+    parent = node
+  var (_, i) = nodes.getOrCreateNode(child)
+  parent.children.add(i)
 
 proc main() =
-  var forest: Node
-  try:
-    var edge = stdin.readline().split(')')
-    if tree == nil:
-      new(tree)
-      tree.val = edge[0]
-    var child = tree.getNode(tree, edge[1])
-    if child == nil:
-      new(child)
-      child.val = edge[1]
-    if addEdge(tree, edge[0], child) == nil:
-      raise newException(Exception, fmt"failed to add child")
-  except EOFError:
-    echo tree
-    # return height(prog)
+  var nodes: NodeList
+  while not stdin.endOfFile():
+    var edge: seq[string] = stdin.readline().split(')')
+    nodes.addEdge(edge[0], edge[1])
+
+  echo orbitChecksum(nodes[0])
   
 main()
