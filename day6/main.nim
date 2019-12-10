@@ -1,6 +1,6 @@
 from strformat import fmt
 from strutils import parseInt, split, join
-from sequtils import foldl
+from sequtils import map, foldl
 import sugar
 
 type
@@ -23,21 +23,30 @@ proc getOrCreateNode(nodes: var NodeList, val: string): (Node, int) =
   return nodes.addNode(val)
 
 
-proc dijkstras(nodes: NodeList): seq[int] =
+# proc dijkstras(nodes: NodeList): seq[int] =
+#   var
+#     n = nodes.len
+#     dist = newSeq[int](n)
+
+#   return dist
+
+
+proc paths(nodes: NodeList, i: int): seq[int] =
   var
-    n = nodes.len
-    dist = newSeq[int](n)
-
-  return dist
-
-
+    node = nodes[i]
+    paths = if node.children.len > 0:
+              node.children.map(n => paths(nodes, n)).foldl(a & b).map(d => d + 1)
+            else:
+              newSeq[int]()
+  paths.add(0)
+  return paths
+  
 proc orbitChecksum(nodes: NodeList): int =
   var
     sum = 0
-    dist = dijkstras(nodes)
-  for x in dist:
-    sum += x
-  return dist.foldl(a + b)
+    paths = paths(nodes, 0)
+  echo paths
+  return paths.foldl(a + b)
   # return node.children.foldl(a + orbitChecksum(b) + 1)
 
 proc addEdge(nodes: var NodeList, val: string, child: string): void =
@@ -58,6 +67,7 @@ proc main() =
     var edge: seq[string] = stdin.readline().split(')')
     nodes.addEdge(edge[0], edge[1])
 
+  # echo nodes.map(n => n[])
   echo orbitChecksum(nodes)
   
 main()
