@@ -9,7 +9,6 @@ type
     children: seq[int]
   NodeList = seq[Node]
 
-
 proc addNode(nodes: var NodeList, val: string): (Node, int) {.inline.} =
   var newNode: Node
   new(newNode)
@@ -23,10 +22,23 @@ proc getOrCreateNode(nodes: var NodeList, val: string): (Node, int) =
       return (nodes[i], i)
   return nodes.addNode(val)
 
-proc orbitChecksum(node: Node): int =
-  if node.children.len == 0:
-    return 0
-  return node.children.foldl(a + orbitChecksum(b) + 1)
+
+proc dijkstras(nodes: NodeList): seq[int] =
+  var
+    n = nodes.len
+    dist = newSeq[int](n)
+
+  return dist
+
+
+proc orbitChecksum(nodes: NodeList): int =
+  var
+    sum = 0
+    dist = dijkstras(nodes)
+  for x in dist:
+    sum += x
+  return dist.foldl(a + b)
+  # return node.children.foldl(a + orbitChecksum(b) + 1)
 
 proc addEdge(nodes: var NodeList, val: string, child: string): void =
   var parent: Node
@@ -46,6 +58,6 @@ proc main() =
     var edge: seq[string] = stdin.readline().split(')')
     nodes.addEdge(edge[0], edge[1])
 
-  echo orbitChecksum(nodes[0])
+  echo orbitChecksum(nodes)
   
 main()
