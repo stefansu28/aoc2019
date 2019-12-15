@@ -27,6 +27,7 @@ type
   ParamMode = enum
     Position
     Immediate
+  ProgState = tuple[pc: int, prog: seq[int]]
 
 proc jump(i: Inst): int =
   case i:
@@ -38,12 +39,12 @@ proc jump(i: Inst): int =
 proc jump(o: Op): int =
   return jump(o.inst)
 
-proc readParam(mode: ParamMode, val: int, mem: var seq[int]): int =
+proc readParam(mode: ParamMode, val: int, mem: seq[int]): int =
   case mode:
   of Position: return mem[val]
   of Immediate: return val
   
-proc parseInst(pc: int, mem: var seq[int]): Op =
+proc parseInst(pc: int, mem: seq[int]): Op =
   var
     opCode = mem[pc]
     op: Op
@@ -60,9 +61,9 @@ proc parseInst(pc: int, mem: var seq[int]): Op =
 
   return op
 
-proc run(prog: var seq[int], input: openarray[int]): seq[int] =
+proc run(prog: var seq[int], input: openarray[int], pcStart:int): (int, seq[int]) =
   var
-    pc = 0
+    pc = pcStart
     read = 0
     output = newSeq[int](0)
 
@@ -76,7 +77,11 @@ proc run(prog: var seq[int], input: openarray[int]): seq[int] =
     of In:
       prog[op.x] = input[read]
       read += 1
-    of Out: output.add(prog[op.x])
+    of Out:
+      # modified for day7 pt2
+      # will "halt" until feedback amp is done
+      output.add(prog[op.x])
+      return (pc + jump(Out), output)
     of Jt:
       if op.x != 0:
         pc = op.y - jump(op)
@@ -93,32 +98,30 @@ proc run(prog: var seq[int], input: openarray[int]): seq[int] =
       if op.x == op.y:
         prog[op.z] = 1
       else: prog[op.z] = 0
-    of Halt: return output
+    of Halt: return (pc, output)
     # else: raise newException(Exception, fmt"unknown inst {prog[pc]}")
     pc += jump(op)
 
 
-proc factorial(n: int): int =
-  var prod = 1
-  for x in 1..n:
-    prod *= x
-  return prod
-    
 const
+  PermStart = 5
   PermutationLen = 5
-  Permutations = factorial(PermutationLen)
 
 proc genPhases(perms: var seq[seq[int]]): seq[seq[int]] =
   while perms[0].len < PermutationLen:
     var newPerms = newSeq[seq[int]]()
     for perm in perms:
-      for x in 0..<PermutationLen:
+      for x in PermStart..<(PermutationLen + PermStart):
         if not (x in perm):
           var newPerm = deepCopy(perm)
           newPerm.add(x)
           newPerms.add(newPerm)
     perms = newPerms
   return perms  
+
+
+proc halted(state: ProgState): bool {.inline.} =
+  return parseInst(state.pc, state.prog).inst == Halt
 
 proc main() =
   var
@@ -128,11 +131,29 @@ proc main() =
 
   discard genPhases(phasePerms)
   for phases in phasePerms:
-    var output = 0
-    for phase in phases:
-      var progCopy = deepCopy(prog)
-      output = run(progCopy, [phase, output])[0]
-      # echo fmt"phases: {phases}, output: {output}"
+    var
+      output = 0
+      progStates = newSeq[ProgState](phases.len)
+      i = 0
+    while progStates[^1].pc == 0 or not halted(progStates[^1]):
+      var
+        phase = phases[i]
+        state = progStates[i]
+        input = @[output]
+      if state.prog.len == 0:
+        state.prog = deepCopy(prog)
+        state.pc = 0
+        input = @[phase, output]
+      # echo fmt"input: {input}, pc: {state.pc}"
+      var progOutput = run(state.prog, input, state.pc)
+      # echo i
+      # echo progOutput
+      # echo state.prog
+      state.pc = progOutput[0]
+      if progOutput[1].len > 0:
+        output = progOutput[1][0]
+      progStates[i] = state
+      i = (i + 1) mod phases.len
     if output > maxOutput:
       maxOutput = output
   
