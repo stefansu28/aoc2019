@@ -8,17 +8,25 @@ const
   Height = 6
   LayerSize = Width * Height
 
-type Layer = array[LayerSize, int8]
+type
+  Layer = array[LayerSize, int8]
+  Color = enum
+    Black = 0
+    White
+    Trans
 
-proc main() =
-  var layers = newSeq[Layer]()
 
+proc readLayers(layers: var seq[Layer]): void =
   while not stdin.endOfFile:
     var newLayer: Layer
     discard stdin.readBytes(newLayer, 0, LayerSize)
     for i in 0..<newLayer.len:
       newLayer[i] -= ord('0')
     layers.add(newLayer)
+
+proc pt1() =
+  var layers = newSeq[Layer]()
+  readLayers(layers)
   
   var
     maxZeros = LayerSize
@@ -33,4 +41,39 @@ proc main() =
       maxVal = counts[1] * counts[2]
 
   echo maxVal
-main()
+
+
+proc printLayer(layer: Layer): void =
+  for row in 0..<Height:
+    for col in 0..<Width:
+      var val = layer[col + row * Width]
+      if val == 1:
+        stdout.write(val)
+      else:
+        stdout.write ' '
+    stdout.write('\n')
+  
+proc pt2() =
+  var
+    layers = newSeq[Layer]()
+    image: Layer
+  readLayers(layers)
+  # initialize the image to be all transparent
+  for i in 0..<image.len:
+    image[i] = int8(Trans)
+
+  for layer in layers:
+    for i in 0..<LayerSize:
+      if image[i] == int8(Trans) and layer[i] != int8(Trans):
+         image[i] = layer[i]
+
+  # for i in 0..<layers.len:
+  #   echo fmt"i:"
+  #   printLayer(layers[i])
+
+  echo "image:"
+  printLayer(image)
+
+# pt1()
+pt2()
+
